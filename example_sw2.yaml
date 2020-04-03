@@ -1,0 +1,5 @@
+substitutions:
+  device_name: example_sw2
+  friendly_name: Example Gosund SW2
+
+<<: !include devices/gosund_sw2_light.yaml
