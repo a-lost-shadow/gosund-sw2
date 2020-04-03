@@ -1,0 +1,129 @@
+esphome:
+  name: ${device_name}
+  platform: ESP8266
+  board: esp8285
+  includes:
+    - devices/gosund_sw2_light.hpp
+    - devices/gosund_sw2_light.cpp
+  on_boot:
+    priority: 300
+    then:
+      - light.turn_on: ${device_name}_wifi_status
+      - delay: 500ms
+      - while:
+          condition:
+            not:
+              wifi.connected
+          then:
+            - light.toggle: ${device_name}_wifi_status
+            - delay: 500ms
+      - light.turn_off: ${device_name}_wifi_status
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  reboot_timeout: 0s
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: ESPHome ${friendly_name}
+    password: !secret fallback_ap_password
+
+captive_portal:
+
+mqtt:
+  broker: !secret mqtt_broker
+
+# Disable logging via the UART
+logger:
+  baud_rate: 0
+
+# Enable Home Assistant API
+api:
+  password: !secret api_password
+  reboot_timeout: 0s
+
+ota:
+  password: !secret ota_password
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO4
+      inverted: true
+    id: button
+    on_press:
+      - light.toggle: ${device_name}
+    on_click:
+      min_length: 5s
+      max_length: 10s
+      then:
+        - switch.turn_on: ${device_name}_restart
+
+switch:
+  - platform: restart
+    name: Reboot ${friendly_name}
+    id: ${device_name}_restart
+
+uart:
+  id: uart_bus
+  baud_rate: 115200
+  tx_pin: GPIO1
+  rx_pin: GPIO3
+
+output:
+  - id: green_led
+    platform: gpio
+    pin: GPIO13
+    inverted: true
+  - id: white_led
+    platform: gpio
+    pin: GPIO12
+    inverted: true
+
+light:
+  - platform: custom
+    lambda: |-
+      auto light_out = new gosund::GosundLight(id(white_led));
+      App.register_component(light_out);
+      return {light_out};
+    lights:
+      - name: ${friendly_name}
+        id: ${device_name}
+        gamma_correct: 1.0
+        default_transition_length: 0s
+    #min_value: 10
+    #max_value: 90
+  - platform: binary
+    id: ${device_name}_wifi_status
+    output: green_led
+    restore_mode: ALWAYS_ON
+
+text_sensor:
+# Expose ESPHome version as sensor.
+  - platform: version
+    name: ${friendly_name} ESPHome Version
+    
+  - platform: wifi_info
+    ip_address:
+      name: ${friendly_name} IP Address
+    ssid:
+      name: ${friendly_name} SSID
+    bssid:
+      name: ${friendly_name} BSSID
+      
+sensor:
+# Uptime sensor.
+  - platform: uptime
+    name: ${friendly_name} Uptime
+    filters:
+      - throttle: 300s
+# WiFi Signal sensor.
+  - platform: wifi_signal
+    name: ${friendly_name} WiFi Signal
+    filters:
+      - delta: 0.01
+      - throttle: 300s
+
+web_server:
+  port: 80
