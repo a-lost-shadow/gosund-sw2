@@ -8,3 +8,4 @@
 **/src/
 **/platformio.ini
 /devices/secrets.yaml
+devices/gosund_sw2_light.yaml
