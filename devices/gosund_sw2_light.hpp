@@ -14,18 +14,14 @@ namespace esphome {
       void setup_state(light::LightState *state) override { state_ = state; }
       void write_state(light::LightState *state) override;
 
-      void set_min_value(uint32_t min_value) { min_value_ = min_value; }
-      void set_max_value(uint32_t max_value) { max_value_ = max_value; }
-    
     protected:
       bool set_by_touch_ = false;
-      uint8_t min_value_ = 0;
-      uint8_t max_value_ = 100;
       light::LightState *state_{nullptr};
       output::BinaryOutput *status_led_;
     
     private:
       void on_brightness_pct_message(const std::string &payload);
+      void populateBrightnessTopic(char * topic, int len);
     };
 
   } // namespace gosund

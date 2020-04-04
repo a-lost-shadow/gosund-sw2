@@ -5,10 +5,19 @@ namespace esphome {
     static const char *TAG = "gosund.light.sw2";
     static const byte ON_MASK = 0x80;
 
+    static const uint8_t MIN_VALUE = 0;
+    static const uint8_t MAX_VALUE = 100;
+    static const uint8_t MIN_PERCENT = 1;
+
+    void GosundLight::populateBrightnessTopic(char * topic, int len) {
+      snprintf(topic, len, "%s/light/%s/command/brightness_pct",
+	       mqtt::global_mqtt_client->get_topic_prefix().c_str(),
+	       state_->get_object_id().c_str());
+    }      
+
     void GosundLight::setup() {
       char topic[256];
-      snprintf(topic,sizeof(topic), "%s/light/%s/command/brightness_pct",
-	       state_->get_object_id().c_str(), state_->get_object_id().c_str());
+      populateBrightnessTopic(topic, sizeof(topic));
       subscribe(topic, &GosundLight::on_brightness_pct_message);
       
       ESP_LOGD(TAG, "Subscribed to: %s", topic);
@@ -48,9 +57,11 @@ namespace esphome {
     }
   
     void GosundLight::dump_config() {
+      char topic[256];
+      populateBrightnessTopic(topic, sizeof(topic));
+
       ESP_LOGCONFIG(TAG, "Gosund SW2 Dimmer:");
-      ESP_LOGCONFIG(TAG, "    Min Value: %u", this->min_value_);
-      ESP_LOGCONFIG(TAG, "    Max Value: %u", this->max_value_);
+      ESP_LOGCONFIG(TAG, " Brightness Percent Topic: %s", topic);
     }
   
     light::LightTraits GosundLight::get_traits() {
@@ -66,12 +77,10 @@ namespace esphome {
 	return;
       }
     
-      uint8_t maxValue = std::min((uint8_t) 100, this->max_value_);
-      uint8_t minValue = std::max((uint8_t) 0  , this->min_value_);
-
       auto values = state->current_values;
-      uint8_t output = std::min(maxValue, (uint8_t) (100 * values.get_brightness()));
-      output = std::max(minValue, output);
+      uint8_t output = std::min(MAX_VALUE,
+				(uint8_t) (100 * values.get_brightness()));
+      output = std::max(MIN_VALUE, output);
     
       if (values.get_state() > 0 && values.get_brightness() > 0) {
 	output += ON_MASK;
@@ -89,15 +98,12 @@ namespace esphome {
     }  
 
     void GosundLight::on_brightness_pct_message(const std::string &payload) {
-      uint8_t maxValue = std::min((uint8_t) 100, this->max_value_);
-      uint8_t minValue = std::max((uint8_t) 1  , this->min_value_);
-
       uint8_t brightness = atoi(payload.c_str());
 
       ESP_LOGD(TAG, "Received MQTT Brightness request for %d", brightness);
       
-      brightness = std::max(minValue, brightness);
-      brightness = std::min(maxValue, brightness);
+      brightness = std::max(MIN_PERCENT, brightness);
+      brightness = std::min(MAX_VALUE, brightness);
 
       float brightnessFloat = 0.01 * brightness;
 

@@ -92,8 +92,6 @@ light:
         id: ${device_name}
         gamma_correct: 1.0
         default_transition_length: 0s
-    #min_value: 10
-    #max_value: 90
   - platform: binary
     id: ${device_name}_wifi_status
     output: green_led
