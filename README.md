@@ -15,6 +15,7 @@ To use
 - Update devices/secrets.yaml
 - Update example_sw2.yaml with the id and friendly name for your switch.  The id will be used as the hostname and id in Home Assistant.
 - Rename example_sw2.yaml
+- Consider disabling the web interface in devices/gosund_sw2_light.yaml
 - Compile with esphome
 - Flash
 
